@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Self-hosted servers come in every shape: allow plain HTTP (LAN addresses; note offline mode then
+  won't work, since service workers need a secure origin) and trust user-installed CAs (self-signed
+  or private-CA certificates).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

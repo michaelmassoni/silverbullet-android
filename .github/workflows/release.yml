@@ -1,0 +1,46 @@
+name: Release
+
+# Push a tag like v0.2.0 → builds a signed APK and attaches it to a GitHub release.
+# Obtainium watches these releases.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Restore signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.SB_KEYSTORE_B64 }}
+        run: |
+          test -n "$KEYSTORE_B64" || { echo "::error::SB_KEYSTORE_B64 secret is not set"; exit 1; }
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+
+      - name: Build signed APK
+        env:
+          SB_KEYSTORE: ${{ runner.temp }}/release.jks
+          SB_KEYSTORE_PASSWORD: ${{ secrets.SB_KEYSTORE_PASSWORD }}
+          SB_KEY_ALIAS: ${{ secrets.SB_KEY_ALIAS }}
+          SB_KEY_PASSWORD: ${{ secrets.SB_KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease -PversionName="${GITHUB_REF_NAME}" --no-daemon
+          mv app/build/outputs/apk/release/app-release.apk "silverbullet-android-${GITHUB_REF_NAME}.apk"
+          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "silverbullet-android-${GITHUB_REF_NAME}.apk" | grep -i sha-256
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: silverbullet-android-*.apk
+          generate_release_notes: true

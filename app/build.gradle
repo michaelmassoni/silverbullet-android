@@ -1,0 +1,60 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+// Version comes from the release tag in CI (-PversionName=1.2.3); vX.Y.Z → versionCode X*10000+Y*100+Z.
+def appVersionName = (project.findProperty('versionName') ?: '0.1.0').toString().replaceFirst(/^v/, '')
+def appVersionCode = appVersionName.tokenize('.').with { p ->
+    (p[0] as int) * 10000 + (p.size() > 1 ? p[1] as int : 0) * 100 + (p.size() > 2 ? p[2] as int : 0)
+}
+
+android {
+    namespace 'io.github.michaelmassoni.silverbullet'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'io.github.michaelmassoni.silverbullet'
+        minSdk 26
+        targetSdk 35
+        versionCode appVersionCode
+        versionName appVersionName
+    }
+    signingConfigs {
+        release {
+            // Supplied by CI secrets (or your shell) — see README. Without them, release builds
+            // fall back to the debug key so local `gradle assembleRelease` still works.
+            def ks = System.getenv('SB_KEYSTORE')
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv('SB_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('SB_KEY_ALIAS')
+                keyPassword System.getenv('SB_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig System.getenv('SB_KEYSTORE') ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+    buildFeatures { buildConfig true }
+    // F-Droid/IzzyOnDroid reject the Google-encrypted dependency metadata block.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = '17' }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.15.0'
+    implementation 'androidx.activity:activity-ktx:1.10.1'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.7'
+    implementation 'androidx.work:work-runtime-ktx:2.10.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1'
+}

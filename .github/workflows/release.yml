@@ -11,16 +11,16 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Restore signing key
         env:
@@ -38,9 +38,10 @@ jobs:
         run: |
           ./gradlew assembleRelease -PversionName="${GITHUB_REF_NAME}" --no-daemon
           mv app/build/outputs/apk/release/app-release.apk "silverbullet-android-${GITHUB_REF_NAME}.apk"
-          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "silverbullet-android-${GITHUB_REF_NAME}.apk" | grep -i sha-256
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
+          "$APKSIGNER" verify --print-certs "silverbullet-android-${GITHUB_REF_NAME}.apk" | grep -i sha-256
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: silverbullet-android-*.apk
           generate_release_notes: true

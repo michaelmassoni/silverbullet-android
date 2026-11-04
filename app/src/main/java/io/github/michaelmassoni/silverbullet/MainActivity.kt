@@ -72,7 +72,8 @@ class MainActivity : ComponentActivity() {
         web.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            @Suppress("DEPRECATION") databaseEnabled = true
+            @Suppress("DEPRECATION")
+            databaseEnabled = true
             allowFileAccess = false
             allowContentAccess = true
             mediaPlaybackRequiresUserGesture = true

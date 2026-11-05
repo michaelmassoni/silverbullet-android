@@ -28,9 +28,8 @@ Ideas for making the app better than the SilverBullet PWA. Brainstormed 2026-11-
 - **Native:** Android code. Robust, works with any server, unaffected by SilverBullet updates.
 - **Injected:** CSS/JS the app adds to the SilverBullet page. Quick, but it relies on SilverBullet's
   internal element names (`#sb-top`, `.sb-mobile-dock-button`, …), so an update can break it.
-- **Bridge:** native buttons that run SilverBullet commands. **Open question:** how to trigger
-  commands reliably from the app (SilverBullet's JS client object? simulating the command palette?).
-  Check this before building anything that depends on it.
+- **Bridge:** native buttons that run SilverBullet commands via `window.client` (see "Done" above;
+  implemented in `assets/bridge.js`).
 
 ## Known quirk: sidebar button missing on first run
 

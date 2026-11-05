@@ -41,7 +41,16 @@ jobs:
           APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
           "$APKSIGNER" verify --print-certs "silverbullet-android-${GITHUB_REF_NAME}.apk" | grep -i sha-256
 
+      - name: Release notes from the fastlane changelog
+        id: notes
+        run: |
+          v="${GITHUB_REF_NAME#v}"; IFS=. read -r a b c <<< "$v"
+          code=$(( a * 10000 + ${b:-0} * 100 + ${c:-0} ))
+          f="fastlane/metadata/android/en-US/changelogs/$code.txt"
+          if [ -f "$f" ]; then echo "body_path=$f" >> "$GITHUB_OUTPUT"; fi
+
       - uses: softprops/action-gh-release@v3
         with:
           files: silverbullet-android-*.apk
+          body_path: ${{ steps.notes.outputs.body_path }}
           generate_release_notes: true

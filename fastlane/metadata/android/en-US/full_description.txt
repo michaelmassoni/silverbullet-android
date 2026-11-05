@@ -1,0 +1,31 @@
+<p>An Android app for your self-hosted <a href="https://silverbullet.md">SilverBullet</a> notes, with a thumb-friendly toolbar, quick capture from anywhere on your phone, and full offline support.</p>
+
+<p><i>This is an unofficial community app. It is not made by, or affiliated with, the SilverBullet project. You need your own SilverBullet v2 server.</i></p>
+
+<p><b>Bottom toolbar</b></p>
+<ul>
+<li>Sidebar, back, home page, search, today's journal and settings by default; also open page, quick capture, run command and read-only mode</li>
+<li>Switch each button on or off in Settings</li>
+<li>Search uses Silversearch if it is installed, otherwise the page picker</li>
+</ul>
+
+<p><b>Quick capture</b></p>
+<ul>
+<li>Opens from the app icon's long-press menu, a quick settings tile, a home-screen widget, or Share from any app</li>
+<li>Each line becomes a bullet on today's journal page or any page you choose, such as Inbox</li>
+<li>Works offline, survives restarts, and never overwrites an edit you are making at the same time</li>
+</ul>
+
+<p><b>Formatting bar</b></p>
+<ul>
+<li>SilverBullet's own keyboard bar (lists, tasks, indent, links, bold, undo and more) sits right above the keyboard and adapts to what you are editing</li>
+</ul>
+
+<p><b>Offline and sync</b></p>
+<ul>
+<li>Read and edit with no connection; changes sync when you are back</li>
+<li>Your notes are not cleared when the phone runs low on storage, unlike a browser's site data</li>
+<li>Works with any SilverBullet v2 server, including ones behind a login, an auth proxy or a VPN</li>
+</ul>
+
+<p>Offline mode needs your server to use HTTPS. Certificates you have installed on your phone (self-signed or a private CA) are trusted.</p>

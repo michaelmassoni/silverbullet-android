@@ -1,0 +1,4 @@
+• Smaller download: release builds are now shrunk (5.4 MB to 2.0 MB)
+• New full-screen settings page with sections and Material 3 dialogs
+• Tapping beside the open sidebar closes it instead of typing into the note
+• Bottom toolbar buttons can be switched on or off individually

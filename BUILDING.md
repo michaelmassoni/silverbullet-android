@@ -52,6 +52,9 @@ Pushing a tag like `v1.2.3` runs `.github/workflows/release.yml`. It builds a si
 version taken from the tag (versionCode `1*10000 + 2*100 + 3`), and attaches it to a GitHub
 release, which Obtainium picks up.
 
+Before tagging, add `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` (500 characters
+max). It becomes the GitHub release notes, and F-Droid shows it too.
+
 The workflow needs these repository secrets: `SB_KEYSTORE_B64` (the release keystore,
 base64-encoded), `SB_KEYSTORE_PASSWORD`, `SB_KEY_ALIAS` and `SB_KEY_PASSWORD`. Without those
 variables, a local `./gradlew assembleRelease` is signed with the debug key.

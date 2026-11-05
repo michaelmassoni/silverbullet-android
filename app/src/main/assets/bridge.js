@@ -26,6 +26,46 @@
   (document.head || document.documentElement).appendChild(hideCss);
   document.documentElement.classList.add("sb-android-hide-actions");
 
+  // --- Sidebar behaves like an Android drawer -------------------------------------------------
+  // On phones SilverBullet overlays the docked sidebar without a backdrop, so a tap beside it lands
+  // in the note (focusing the editor and opening the keyboard) while the sidebar stays open. Make
+  // that first tap only close the sidebar, swallowing every event of the gesture.
+  function openDrawer() {
+    for (const side of ["left", "right"]) {
+      const btn = document.querySelector(`#sb-top .sb-mobile-dock-button.sb-mobile-dock-${side}[aria-expanded="true"]`);
+      if (!btn || getComputedStyle(btn).display === "none") continue; // wide screen: real sidebar
+      const panel = document.querySelector(`.sb-nav-root-${side === "left" ? "lhs" : "rhs"}`);
+      if (panel) return { btn, panel };
+    }
+    return null;
+  }
+  let swallowing = false;
+  let swallowUntil = 0;
+  function drawerGuard(e) {
+    const starts = e.type === "pointerdown" || e.type === "touchstart" || e.type === "mousedown";
+    if (!swallowing || (starts && Date.now() > swallowUntil)) {
+      swallowing = false;
+      if (!starts) return;
+      const d = openDrawer();
+      if (!d) return;
+      const t = e.target;
+      if (d.panel.contains(t) || d.btn.contains(t)) return;
+      if (t.closest && t.closest(".sb-modal, .sb-modal-backdrop")) return; // e.g. a picker on top
+      d.btn.click(); // close first: this synthetic click must not be swallowed
+      swallowing = true;
+      swallowUntil = Date.now() + 1500; // safety net if the end of the gesture never arrives
+    }
+    if (e.type === "touchend" || e.type === "pointerup" || e.type === "touchcancel") {
+      swallowUntil = Date.now() + 400; // still catch the emulated mouse events and click
+    }
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }
+  for (const type of ["pointerdown", "touchstart", "mousedown", "pointerup", "touchend",
+                      "touchcancel", "mouseup", "click"]) {
+    window.addEventListener(type, drawerGuard, { capture: true, passive: false });
+  }
+
   // --- Actions for the native bottom bar ------------------------------------------------------
   function commandNames(c) {
     try { return [...c.ui.viewState.commands.keys()]; } catch (e) { return []; }

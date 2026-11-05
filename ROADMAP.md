@@ -27,6 +27,13 @@ Ideas for making the app better than the SilverBullet PWA. Brainstormed 2026-11-
   also return to the `/.auth` login page; history is now cleared after sign-in. Bar hidden on the
   login page.
 
+## Fixed after v0.3.0
+
+- Sidebar on phones had no backdrop: a tap beside it focused the note (keyboard opened) while the
+  sidebar stayed open. `bridge.js` now treats it like an Android drawer: the first tap outside
+  closes it and the whole gesture (touch/pointer/mouse/click) is swallowed. Only when
+  SilverBullet's mobile dock button is visible (narrow screens), and not over modals.
+
 ## Follow-ups noticed
 
 - Search opens without the keyboard; you have to tap the field first.

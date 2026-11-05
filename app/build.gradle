@@ -34,7 +34,10 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
+            // R8: drop unused code and resources (see proguard-rules.pro).
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig System.getenv('SB_KEYSTORE') ? signingConfigs.release : signingConfigs.debug
         }
     }

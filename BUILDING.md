@@ -56,5 +56,9 @@ The workflow needs these repository secrets: `SB_KEYSTORE_B64` (the release keys
 base64-encoded), `SB_KEYSTORE_PASSWORD`, `SB_KEY_ALIAS` and `SB_KEY_PASSWORD`. Without those
 variables, a local `./gradlew assembleRelease` is signed with the debug key.
 
+Release builds are shrunk with R8 (unused code and resources removed; class names kept so crash
+reports stay readable). If something works in a debug build but not in a release build, a missing
+keep rule in `app/proguard-rules.pro` is the likely cause.
+
 Every update must be signed with the same key, or Android refuses to install it over the existing
 app. Keep the keystore backed up.

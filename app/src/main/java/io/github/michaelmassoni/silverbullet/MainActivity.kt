@@ -4,12 +4,12 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.content.res.Configuration
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
-import android.widget.FrameLayout
 import android.webkit.CookieManager
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -17,24 +17,40 @@ import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
+import android.widget.LinearLayout
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.graphics.ColorUtils
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
+import org.json.JSONObject
+import kotlin.math.max
+import kotlin.math.roundToInt
 
 /**
  * Hosts the SilverBullet web client in a WebView. SilverBullet's own service worker does the
  * offline caching and sync; this shell adds a persistent (never browser-evicted) storage origin,
- * a warm process when you switch away, external links in the real browser, and file uploads.
+ * a warm process when you switch away, a native bottom bar, keyboard-aware layout (so
+ * SilverBullet's formatting bar works), external links in the real browser, and file uploads.
  */
 class MainActivity : ComponentActivity() {
     private lateinit var web: WebView
+    private lateinit var bar: BottomBarView
+    private lateinit var root: LinearLayout
     private lateinit var prefs: Prefs
+    private lateinit var barPrefs: BarPrefs
     private var loadedServer: String? = null
     private var fileCallback: ValueCallback<Array<Uri>>? = null
+    private var keyboardVisible = false
+    private var lastKeyboardCss = -1
+    private var bridgeAtDocumentStart = false
+    private val bridgeJs by lazy { assets.open("bridge.js").bufferedReader().use { it.readText() } }
 
     private val pickFiles = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
         fileCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(r.resultCode, r.data))
@@ -47,26 +63,38 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
-        if (prefs.server == null) {
+        barPrefs = BarPrefs(this)
+        val server = prefs.server
+        if (server == null) {
             startActivity(Intent(this, SetupActivity::class.java))
             finish()
             return
         }
 
+        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
         web = WebView(this)
+        bar = BottomBarView(this, ::onBarClick)
         // WebView ignores its own padding, so inset a container around it instead.
-        val root = FrameLayout(this).apply { addView(web) }
-        setContentView(root)
-        // Keep page content clear of the status bar, nav bar and keyboard.
-        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime())
-            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
-            WindowInsetsCompat.CONSUMED
+        root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(FrameLayout(this@MainActivity).apply { addView(web) },
+                LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+            addView(bar)
         }
-        val night = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        WindowCompat.getInsetsController(window, web).apply {
-            isAppearanceLightStatusBars = !night
-            isAppearanceLightNavigationBars = !night
+        setContentView(root)
+
+        // The window is edge-to-edge and never resized for the keyboard. Pad for the system bars,
+        // and instead of shrinking the WebView for the keyboard, tell SilverBullet how much of it
+        // the keyboard covers (see bridge.js): it then lays out above the keyboard itself and shows
+        // its own formatting bar, exactly as it does in Chrome.
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            keyboardVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
+            updateBarVisibility()
+            pushKeyboardHeight(max(0, ime.bottom - bars.bottom))
+            WindowInsetsCompat.CONSUMED
         }
 
         web.settings.apply {
@@ -85,6 +113,7 @@ class MainActivity : ComponentActivity() {
             setAcceptCookie(true)
             setAcceptThirdPartyCookies(web, false)
         }
+        installBridge(server)
 
         web.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -92,6 +121,12 @@ class MainActivity : ComponentActivity() {
                 if (url.host == Uri.parse(prefs.server ?: "").host) return false
                 openExternally(url)
                 return true
+            }
+
+            override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
+                lastKeyboardCss = -1
+                // Old WebViews without document-start scripts: inject as early as we can.
+                if (!bridgeAtDocumentStart && isServerUrl(url)) view.evaluateJavascript(bridgeJs, null)
             }
 
             override fun onPageFinished(view: WebView, url: String) {
@@ -119,8 +154,12 @@ class MainActivity : ComponentActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (web.canGoBack()) web.goBack()
-                else moveTaskToBack(true) // keep the process (and editor) warm instead of finishing
+                // Let SilverBullet close an open picker/panel first, then page history, then leave.
+                web.evaluateJavascript("window.__sbAndroid ? window.__sbAndroid.back() : false") { closed ->
+                    if (closed == "true") return@evaluateJavascript
+                    if (web.canGoBack()) web.goBack()
+                    else moveTaskToBack(true) // keep the process (and editor) warm instead of finishing
+                }
             }
         })
 
@@ -132,6 +171,65 @@ class MainActivity : ComponentActivity() {
             askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
+
+    /** Injects bridge.js and the theme channel, restricted to the server's own origin. */
+    private fun installBridge(server: String) {
+        val origin = originOf(server)
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+            WebViewCompat.addDocumentStartJavaScript(web, bridgeJs, setOf(origin))
+            bridgeAtDocumentStart = true
+        }
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+            WebViewCompat.addWebMessageListener(web, "SBAndroidNative", setOf(origin)) { _, message, _, isMainFrame, _ ->
+                if (isMainFrame) onBridgeMessage(message.data ?: return@addWebMessageListener)
+            }
+        }
+    }
+
+    private fun onBridgeMessage(data: String) {
+        val msg = runCatching { JSONObject(data) }.getOrNull() ?: return
+        if (msg.optString("type") == "theme") {
+            val barColor = parseCssColor(msg.optString("bar")) ?: return
+            val fg = parseCssColor(msg.optString("fg")) ?: return
+            applyTheme(barColor, fg, parseCssColor(msg.optString("page")) ?: barColor)
+        }
+    }
+
+    /** Match the status bar strip, bottom bar and navigation bar area to SilverBullet's theme. */
+    private fun applyTheme(barColor: Int, fg: Int, page: Int) {
+        root.setBackgroundColor(barColor) // shows through behind the status and navigation bars
+        bar.setColors(barColor, fg)
+        window.decorView.setBackgroundColor(page)
+        val light = ColorUtils.calculateLuminance(barColor) > 0.5
+        WindowCompat.getInsetsController(window, root).apply {
+            isAppearanceLightStatusBars = light
+            isAppearanceLightNavigationBars = light
+        }
+    }
+
+    private fun onBarClick(item: BarItem) {
+        when (item) {
+            BarItem.CAPTURE -> startActivity(Intent(this, CaptureActivity::class.java))
+            BarItem.SETTINGS -> startActivity(Intent(this, SettingsActivity::class.java))
+            else -> web.evaluateJavascript("window.__sbAndroid && window.__sbAndroid.run('${item.key}')") { r ->
+                if (r != "true") Log.w(TAG, "bar action ${item.key} not handled (client not ready?)")
+            }
+        }
+    }
+
+    private fun updateBarVisibility() {
+        // The bar steps aside while typing; SilverBullet's keyboard bar takes over then.
+        bar.visibility = if (barPrefs.enabled && !keyboardVisible) View.VISIBLE else View.GONE
+    }
+
+    private fun pushKeyboardHeight(px: Int) {
+        val css = (px / resources.displayMetrics.density).roundToInt()
+        if (css == lastKeyboardCss) return
+        lastKeyboardCss = css
+        web.evaluateJavascript("window.__sbAndroid && window.__sbAndroid.setKeyboard($css)", null)
+    }
+
+    private fun isServerUrl(url: String) = prefs.server?.let { url.startsWith(it) } == true
 
     private fun loadStart() {
         val server = prefs.server ?: return
@@ -162,8 +260,16 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         if (!::web.isInitialized) return
         web.onResume()
-        if (prefs.server == null) { startActivity(Intent(this, SetupActivity::class.java)); finish(); return }
-        if (loadedServer != null && loadedServer != prefs.server) { prefs.lastUrl = null; loadStart() }
+        val server = prefs.server
+        if (server == null) { startActivity(Intent(this, SetupActivity::class.java)); finish(); return }
+        if (loadedServer != null && loadedServer != server) {
+            // Scripts are bound to the old origin; simplest correct thing is a fresh activity.
+            prefs.lastUrl = null
+            recreate()
+            return
+        }
+        bar.setItems(barPrefs.visibleItems()) // settings may have changed
+        updateBarVisibility()
         CaptureWorker.kick(this)
     }
 
@@ -184,5 +290,23 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         if (::web.isInitialized) web.destroy()
         super.onDestroy()
+    }
+
+    companion object {
+        private const val TAG = "MainActivity"
+
+        fun originOf(server: String): String {
+            val u = Uri.parse(server)
+            return "${u.scheme}://${u.host}${if (u.port != -1) ":${u.port}" else ""}"
+        }
+
+        /** Parses `rgb(r, g, b)` / `rgba(r, g, b, a)` as returned by getComputedStyle. */
+        fun parseCssColor(css: String): Int? {
+            val m = Regex("""rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+))?\s*\)""").find(css) ?: return null
+            val (r, g, b) = m.destructured
+            val a = m.groupValues[4].toFloatOrNull() ?: 1f
+            if (a < 0.05f) return null // transparent: keep the current colour
+            return Color.rgb(r.toInt(), g.toInt(), b.toInt())
+        }
     }
 }

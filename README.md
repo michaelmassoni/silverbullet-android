@@ -23,10 +23,12 @@ Signing certificate SHA-256 (check it before trusting an APK):
   browser can do to a PWA. Pressing back on your last page sends the app to the background
   instead of closing it, so it reopens instantly. External links open in your browser, and file
   upload works.
-- **Bottom action bar** within thumb reach: sidebar, search (Silversearch if installed, otherwise
-  the page picker), today's journal, quick capture and the command palette by default. Back, Home
-  and App settings can be added; every entry can be switched on or off in settings. It matches
-  your SilverBullet theme (light/dark) and steps aside while you type.
+- **Bottom action bar** within thumb reach. Default: sidebar, back, home page, search (Silversearch
+  if installed, otherwise the page picker), today's journal and app settings. Also available: open
+  page, quick capture, run command, and read-only mode (the lock lights up while it's on). Every
+  entry can be switched on or off in settings. It matches your SilverBullet theme (light/dark),
+  steps aside while you type, and SilverBullet's own top-right buttons are hidden by default
+  since the bar replaces them (toggle in settings; they always return if the bar is off).
 - **Formatting bar above the keyboard.** SilverBullet's own keyboard bar (lists, tasks, indent,
   links, bold, undo and more) doesn't appear in a plain WebView, because Android's WebView always
   reports a keyboard height of 0. The app passes SilverBullet the real height, so the bar works and

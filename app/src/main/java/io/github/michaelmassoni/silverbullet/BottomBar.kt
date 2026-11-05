@@ -16,13 +16,15 @@ import androidx.core.content.edit
  */
 enum class BarItem(val key: String, val label: String, val icon: Int, val defaultOn: Boolean) {
     SIDEBAR("sidebar", "Sidebar", R.drawable.ic_bar_sidebar, true),
-    BACK("back", "Back", R.drawable.ic_bar_back, false),
-    HOME("home", "Home page", R.drawable.ic_bar_home, false),
+    BACK("back", "Back", R.drawable.ic_bar_back, true),
+    HOME("home", "Home page", R.drawable.ic_bar_home, true),
+    OPEN_PAGE("openpage", "Open page", R.drawable.ic_bar_openpage, false),
     SEARCH("search", "Search", R.drawable.ic_bar_search, true),
     JOURNAL("journal", "Today's journal", R.drawable.ic_bar_journal, true),
-    CAPTURE("capture", "Quick capture", R.drawable.ic_capture, true),
-    COMMANDS("commands", "Command palette", R.drawable.ic_bar_commands, true),
-    SETTINGS("settings", "App settings", R.drawable.ic_settings, false);
+    CAPTURE("capture", "Quick capture", R.drawable.ic_capture, false),
+    COMMANDS("commands", "Run command", R.drawable.ic_bar_commands, false),
+    READONLY("readonly", "Read-only mode", R.drawable.ic_bar_readonly, false),
+    SETTINGS("settings", "App settings", R.drawable.ic_settings, true);
 }
 
 /** Bottom bar preferences, kept beside the other app settings. */
@@ -36,6 +38,11 @@ class BarPrefs(context: Context) {
     fun isOn(item: BarItem) = sp.getBoolean("bar_${item.key}", item.defaultOn)
     fun set(item: BarItem, on: Boolean) = sp.edit { putBoolean("bar_${item.key}", on) }
 
+    /** Hide SilverBullet's own top-right buttons (home, open page, ☰ menu); the bar replaces them. */
+    var hideTopActions: Boolean
+        get() = sp.getBoolean("hide_top_actions", true)
+        set(v) = sp.edit { putBoolean("hide_top_actions", v) }
+
     fun visibleItems(): List<BarItem> = BarItem.entries.filter { isOn(it) }
 }
 
@@ -43,6 +50,7 @@ class BarPrefs(context: Context) {
 class BottomBarView(context: Context, private val onClick: (BarItem) -> Unit) : LinearLayout(context) {
     private var fg = Color.GRAY
     private var accent = context.getColor(R.color.accent)
+    private var readOnly = false
 
     init {
         orientation = HORIZONTAL
@@ -69,6 +77,13 @@ class BottomBarView(context: Context, private val onClick: (BarItem) -> Unit) : 
         applyTint()
     }
 
+    /** Tint the read-only button while read-only mode is on. */
+    fun setReadOnly(on: Boolean) {
+        if (on == readOnly) return
+        readOnly = on
+        applyTint()
+    }
+
     fun setColors(background: Int, foreground: Int) {
         setBackgroundColor(background)
         fg = foreground
@@ -78,7 +93,8 @@ class BottomBarView(context: Context, private val onClick: (BarItem) -> Unit) : 
     private fun applyTint() {
         for (i in 0 until childCount) {
             val b = getChildAt(i) as ImageButton
-            b.imageTintList = ColorStateList.valueOf(if (b.tag == BarItem.CAPTURE) accent else fg)
+            val active = b.tag == BarItem.CAPTURE || (b.tag == BarItem.READONLY && readOnly)
+            b.imageTintList = ColorStateList.valueOf(if (active) accent else fg)
         }
     }
 

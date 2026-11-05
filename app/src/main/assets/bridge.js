@@ -19,6 +19,13 @@
     Object.defineProperty(navigator, "virtualKeyboard", { value: vk, configurable: true });
   } catch (e) { /* leave the native one */ }
 
+  // --- Hide SilverBullet's top-right buttons (the native bar replaces them) -------------------
+  // On by default so they never flash; the app turns it off if the user prefers them.
+  const hideCss = document.createElement("style");
+  hideCss.textContent = "html.sb-android-hide-actions #sb-top .sb-actions { display: none !important; }";
+  (document.head || document.documentElement).appendChild(hideCss);
+  document.documentElement.classList.add("sb-android-hide-actions");
+
   // --- Actions for the native bottom bar ------------------------------------------------------
   function commandNames(c) {
     try { return [...c.ui.viewState.commands.keys()]; } catch (e) { return []; }
@@ -39,6 +46,8 @@
     },
     back() { history.back(); },
     home(c) { tryRun(c, "Navigate: Home"); },
+    openpage(c) { tryRun(c, "Navigate: Page Picker"); },
+    readonly(c) { tryRun(c, "Editor: Toggle Read Only Mode").then(reportTheme); },
     search(c) {
       // Use a full-text search plug if installed (e.g. "Silversearch: Search"), else the page picker.
       const s = commandNames(c).find((k) => /^[^:]+:\s*search( space)?$/i.test(k));
@@ -56,7 +65,9 @@
     if (!top || !window.SBAndroidNative) return;
     const cs = getComputedStyle(top);
     const page = getComputedStyle(document.getElementById("sb-main") || document.body);
-    const msg = JSON.stringify({ type: "theme", bar: cs.backgroundColor, fg: cs.color, page: page.backgroundColor });
+    let ro = false;
+    try { ro = !!window.client.ui.viewState.uiOptions.forcedROMode; } catch (e) {}
+    const msg = JSON.stringify({ type: "theme", bar: cs.backgroundColor, fg: cs.color, page: page.backgroundColor, readOnly: ro });
     if (msg !== lastTheme) { lastTheme = msg; window.SBAndroidNative.postMessage(msg); }
   }
   setInterval(reportTheme, 1000);
@@ -73,22 +84,33 @@
       try { actions[name](c); return true; } catch (e) { console.warn("[sbAndroid]", name, e); return false; }
     },
     reportTheme,
-    // Android back: close whatever SilverBullet has open (picker, modal, docked panel) first.
+    setHideTopActions(on) {
+      document.documentElement.classList.toggle("sb-android-hide-actions", !!on);
+    },
+    // Android back: close whatever SilverBullet has open (panel, picker, prompt, sidebar) first.
+    // Uses SilverBullet's own controls only. Never synthesise key events: SilverBullet treats a
+    // keydown with no on-screen keyboard as a hardware keyboard and then docks its keyboard bar.
     back() {
       const c = window.client;
-      if (!c) return false;
-      const vs = c.ui && c.ui.viewState;
-      // Plug panels (e.g. Silversearch) live in an iframe that swallows key events: hide directly.
-      if (vs && vs.panels && vs.panels.modal && vs.panels.modal.mode !== undefined && c.ui.viewDispatch) {
-        c.ui.viewDispatch({ type: "hide-panel", id: "modal" });
-        return true;
+      if (!c || !c.ui) return false;
+      const vs = c.ui.viewState || {};
+      const dispatch = (action) => { c.ui.viewDispatch(action); return true; };
+      // Plug panels (e.g. Silversearch) live in an iframe.
+      if (vs.panels && vs.panels.modal && vs.panels.modal.mode !== undefined) {
+        return dispatch({ type: "hide-panel", id: "modal" });
       }
-      const modalOpen = vs && ((vs.panels && vs.panels.modal && vs.panels.modal.mode !== undefined) || vs.showFilterBox || vs.showPrompt || vs.showConfirm);
-      if (modalOpen || document.querySelector(".sb-modal, .sb-modal-backdrop")) {
-        const target = document.activeElement || document.body;
-        target.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", keyCode: 27, bubbles: true, cancelable: true }));
-        return true;
+      // Navigator pickers (page picker, command palette, …) have a close button.
+      const navClose = document.querySelector(".sb-nav-root-modal .sb-nav-close");
+      if (navClose) { navClose.click(); return true; }
+      // Prompts and confirms: press Cancel so whoever asked gets an answer.
+      if (vs.showPrompt || vs.showConfirm) {
+        const cancel = [...document.querySelectorAll(".sb-modal button")]
+          .find((b) => /^\s*(cancel|no)\s*$/i.test(b.textContent || ""));
+        if (cancel) { cancel.click(); return true; }
+        return dispatch({ type: vs.showPrompt ? "hide-prompt" : "hide-confirm" });
       }
+      if (vs.showFilterBox) return dispatch({ type: "hide-filterbox" });
+      // Docked sidebars.
       for (const side of ["left", "right"]) {
         const btn = document.querySelector("#sb-top .sb-mobile-dock-button.sb-mobile-dock-" + side + "[aria-expanded=true]");
         if (btn) { btn.click(); return true; }

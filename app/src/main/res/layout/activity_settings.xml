@@ -99,6 +99,15 @@
         android:textColor="@color/fg"
         android:textSize="15sp" />
 
+    <Switch
+        android:id="@+id/hide_top_actions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="44dp"
+        android:text="Hide SilverBullet's top-right buttons"
+        android:textColor="@color/fg"
+        android:textSize="15sp" />
+
     <LinearLayout
         android:id="@+id/bar_items"
         android:layout_width="match_parent"

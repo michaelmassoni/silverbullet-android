@@ -56,6 +56,10 @@ class SettingsActivity : Activity() {
         master.isChecked = barPrefs.enabled
         sync(master.isChecked)
         master.setOnCheckedChangeListener { _, on -> barPrefs.enabled = on; sync(on) }
+        findViewById<Switch>(R.id.hide_top_actions).apply {
+            isChecked = barPrefs.hideTopActions
+            setOnCheckedChangeListener { _, on -> barPrefs.hideTopActions = on }
+        }
     }
 
     override fun onResume() {

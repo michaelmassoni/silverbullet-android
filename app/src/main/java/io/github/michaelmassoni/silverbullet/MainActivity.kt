@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
     private var loadedServer: String? = null
     private var fileCallback: ValueCallback<Array<Uri>>? = null
     private var keyboardVisible = false
+    private var onLoginPage = false
     private var lastKeyboardCss = -1
     private var bridgeAtDocumentStart = false
     private val bridgeJs by lazy { assets.open("bridge.js").bufferedReader().use { it.readText() } }
@@ -124,12 +125,17 @@ class MainActivity : ComponentActivity() {
             }
 
             override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
+                onLoginPage = url.contains("/.auth")
+                updateBarVisibility()
                 lastKeyboardCss = -1
                 // Old WebViews without document-start scripts: inject as early as we can.
                 if (!bridgeAtDocumentStart && isServerUrl(url)) view.evaluateJavascript(bridgeJs, null)
             }
 
             override fun onPageFinished(view: WebView, url: String) {
+                // Signed in: drop the login page from history so Back can't return to it.
+                if (!url.contains("/.auth") && historyHasLogin()) view.clearHistory()
+                applyTopActionsSetting()
                 CookieManager.getInstance().flush()
                 // After a successful sign-in (or any normal load) push queued captures.
                 if (!url.contains("/.auth")) CaptureWorker.kick(this@MainActivity)
@@ -192,6 +198,7 @@ class MainActivity : ComponentActivity() {
             val barColor = parseCssColor(msg.optString("bar")) ?: return
             val fg = parseCssColor(msg.optString("fg")) ?: return
             applyTheme(barColor, fg, parseCssColor(msg.optString("page")) ?: barColor)
+            bar.setReadOnly(msg.optBoolean("readOnly"))
         }
     }
 
@@ -217,9 +224,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun historyHasLogin(): Boolean {
+        val list = web.copyBackForwardList()
+        return (0 until list.size).any { list.getItemAtIndex(it)?.url?.contains("/.auth") == true }
+    }
+
+    private fun applyTopActionsSetting() {
+        web.evaluateJavascript(
+            "window.__sbAndroid && window.__sbAndroid.setHideTopActions(${barPrefs.enabled && barPrefs.hideTopActions})", null)
+    }
+
     private fun updateBarVisibility() {
         // The bar steps aside while typing; SilverBullet's keyboard bar takes over then.
-        bar.visibility = if (barPrefs.enabled && !keyboardVisible) View.VISIBLE else View.GONE
+        // Also hidden on the login page, where SilverBullet (and so every bar action) isn't running.
+        bar.visibility = if (barPrefs.enabled && !keyboardVisible && !onLoginPage) View.VISIBLE else View.GONE
     }
 
     private fun pushKeyboardHeight(px: Int) {
@@ -269,6 +287,7 @@ class MainActivity : ComponentActivity() {
             return
         }
         bar.setItems(barPrefs.visibleItems()) // settings may have changed
+        applyTopActionsSetting()
         updateBarVisibility()
         CaptureWorker.kick(this)
     }

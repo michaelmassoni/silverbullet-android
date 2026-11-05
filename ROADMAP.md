@@ -16,6 +16,17 @@ Ideas for making the app better than the SilverBullet PWA. Brainstormed 2026-11-
 - **First-run sidebar quirk** worked around: the bar's sidebar button opens the view the space
   docks on the left (`view.defaults` with `dock = "lhs"`) when SilverBullet's own toggle is missing.
 
+## Done (v0.3.0, 2026-11-05)
+
+- New bar defaults: sidebar, back, home, search, journal, settings. New entries: open page,
+  run command (renamed from command palette), read-only toggle with lit state.
+- Setting to hide SilverBullet's top-right `actionButtons` (on by default, CSS class on `<html>`).
+- Bugs fixed: Back used a synthetic Escape keydown to close pickers, which made SilverBullet think
+  a hardware keyboard was attached and dock its keyboard bar permanently. Never synthesise key
+  events; close via `.sb-nav-close`, `viewDispatch` hide-* actions, or Cancel buttons. Back could
+  also return to the `/.auth` login page; history is now cleared after sign-in. Bar hidden on the
+  login page.
+
 ## Follow-ups noticed
 
 - Search opens without the keyboard; you have to tap the field first.

@@ -1,160 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/settings_root"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="20dp">
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/server_url"
-        android:textColor="@color/muted"
-        android:textSize="13sp" />
-
-    <LinearLayout
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        app:liftOnScroll="true"
+        app:liftOnScrollTargetViewId="@id/recycler_view">
 
-        <TextView
-            android:id="@+id/server"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:ellipsize="middle"
-            android:singleLine="true"
-            android:textColor="@color/fg"
-            android:textSize="16sp" />
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:navigationContentDescription="Back"
+            app:navigationIcon="@drawable/ic_bar_back"
+            app:navigationIconTint="?attr/colorOnSurface"
+            app:title="Settings" />
+    </com.google.android.material.appbar.AppBarLayout>
 
-        <Button
-            android:id="@+id/change_server"
-            style="?android:attr/borderlessButtonStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Change"
-            android:textAllCaps="false"
-            android:textColor="@color/accent" />
-    </LinearLayout>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="Quick capture page ({date} = today, e.g. Journal/{date} or Inbox)"
-        android:textColor="@color/muted"
-        android:textSize="13sp" />
-
-    <EditText
-        android:id="@+id/capture_page"
+    <FrameLayout
+        android:id="@+id/settings_container"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:background="@drawable/field_bg"
-        android:importantForAutofill="no"
-        android:inputType="text"
-        android:padding="12dp"
-        android:textColor="@color/fg" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="API token (optional: the server's SB_AUTH_TOKEN). Lets captures sync after your login expires."
-        android:textColor="@color/muted"
-        android:textSize="13sp" />
-
-    <EditText
-        android:id="@+id/token"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:background="@drawable/field_bg"
-        android:importantForAutofill="no"
-        android:inputType="textPassword"
-        android:padding="12dp"
-        android:textColor="@color/fg" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="Bottom bar"
-        android:textColor="@color/fg"
-        android:textSize="15sp"
-        android:textStyle="bold" />
-
-    <Switch
-        android:id="@+id/bar_enabled"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:minHeight="44dp"
-        android:text="Show bottom bar"
-        android:textColor="@color/fg"
-        android:textSize="15sp" />
-
-    <Switch
-        android:id="@+id/hide_top_actions"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="44dp"
-        android:text="Hide SilverBullet's top-right buttons"
-        android:textColor="@color/fg"
-        android:textSize="15sp" />
-
-    <LinearLayout
-        android:id="@+id/bar_items"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingStart="12dp" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:text="The bar hides while you type; SilverBullet's own formatting bar shows above the keyboard instead (customise it with keyboardBar in your space's CONFIG)."
-        android:textColor="@color/muted"
-        android:textSize="12sp" />
-
-    <TextView
-        android:id="@+id/status"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:textColor="@color/muted"
-        android:textSize="13sp" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:gravity="end"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/sync"
-            style="?android:attr/borderlessButtonStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Send queued now"
-            android:textAllCaps="false"
-            android:textColor="@color/muted" />
-
-        <Button
-            android:id="@+id/save"
-            style="?android:attr/borderlessButtonStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/save"
-            android:textAllCaps="false"
-            android:textColor="@color/accent" />
-    </LinearLayout>
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 </LinearLayout>
-</ScrollView>

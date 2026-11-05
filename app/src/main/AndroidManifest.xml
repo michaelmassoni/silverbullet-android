@@ -55,7 +55,7 @@
             android:name=".SettingsActivity"
             android:exported="false"
             android:label="@string/settings_label"
-            android:theme="@style/CaptureTheme" />
+            android:theme="@style/SettingsTheme" />
 
         <service
             android:name=".CaptureTileService"

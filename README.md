@@ -17,7 +17,7 @@ Signing certificate SHA-256 (check it before trusting an APK):
 
 - **First run:** enter your server URL. The app checks the server is reachable, then shows your
   server's own login page, so `SB_USER`, auth proxies and SSO all work as they do in a browser.
-  To switch servers later: long-press the app icon → *SilverBullet settings* → *Change*.
+  To switch servers later: Settings (bottom bar, or long-press the app icon) → *SilverBullet server*.
 - **Works offline.** SilverBullet's service worker keeps a local copy of your pages and syncs it
   with the server. The app's storage isn't cleared when the phone runs low on space, which a
   browser can do to a PWA. Pressing back on your last page sends the app to the background

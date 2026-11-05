@@ -9,4 +9,13 @@
         <item name="android:windowMinWidthMajor">90%</item>
         <item name="android:windowMinWidthMinor">90%</item>
     </style>
+    <style name="SettingsTheme" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/accent</item>
+        <!-- Preference category titles use colorAccent: follow the (possibly dynamic) primary. -->
+        <item name="colorAccent">?attr/colorPrimary</item>
+        <item name="android:colorAccent">?attr/colorPrimary</item>
+        <!-- Preference edit dialogs: Material 3 rounded dialogs. -->
+        <item name="alertDialogTheme">@style/ThemeOverlay.Material3.MaterialAlertDialog</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 </resources>

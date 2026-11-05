@@ -34,6 +34,13 @@ Ideas for making the app better than the SilverBullet PWA. Brainstormed 2026-11-
   closes it and the whole gesture (touch/pointer/mouse/click) is swallowed. Only when
   SilverBullet's mobile dock button is visible (narrow screens), and not over modals.
 
+## Done (v0.4.0, 2026-11-05)
+
+- Settings rebuilt as a full-screen Material 3 / AndroidX Preference screen (dynamic colour on
+  Android 12+): Server, Quick capture, Bottom bar, Bottom bar buttons, About. Text settings use
+  `MaterialAlertDialogBuilder` (Preference's own dialogs are the old square style). Bar switches
+  are generated from `BarItem` so labels/defaults never drift.
+
 ## Follow-ups noticed
 
 - Search opens without the keyboard; you have to tap the field first.

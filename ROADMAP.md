@@ -70,7 +70,7 @@ in the app. None are used today, but keep it in mind.
 
 ## Ideas
 
-### User's three
+### Toolbar, settings and search
 1. **Bottom action bar** (native + bridge). A thumb-reach bar, suggested order:
    sidebar · search · journal · capture · ☰. Native beats moving SilverBullet's top bar with CSS.
    Hide it while the keyboard is open.
@@ -110,4 +110,4 @@ in the app. None are used today, but keep it in mind.
 4. Widgets and pinned pages (5, 6).
 5. Later: reminders (7).
 
-Waiting on the user: which to build first, and the bottom-bar button set and order.
+Next up: pick from the remaining ideas below.

@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Flushes the capture queue to the server whenever there is a network. WorkManager persists the
  * job across app restarts and reboots, so a capture made in a dead zone is sent when you are back
- * on the tailnet, even if the app is never opened again.
+ * on your network or VPN, even if the app is never opened again.
  */
 class CaptureWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
 

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="128" height="128">
+  <!-- Same artwork as the adaptive launcher icon (res/drawable/ic_launcher_fg.xml) -->
+  <circle cx="54" cy="54" r="54" fill="#1E1E2A"/>
+  <circle cx="38" cy="38" r="4" fill="#B8BAC8"/>
+  <rect x="48" y="35.5" width="28" height="5" fill="#B8BAC8"/>
+  <circle cx="38" cy="54" r="5" fill="#8F94FF"/>
+  <rect x="48" y="51" width="26" height="6" fill="#FFFFFF"/>
+  <circle cx="38" cy="70" r="4" fill="#B8BAC8"/>
+  <rect x="48" y="67.5" width="20" height="5" fill="#B8BAC8"/>
+</svg>
